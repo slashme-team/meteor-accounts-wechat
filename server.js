@@ -82,18 +82,32 @@ let getTokenResponse = function(config, query) {
   }
   let response;
   try {
-    let params = {
+    let appId = state.appId;
+    let secret = (config.secret && config.secret.secret) || config.secret;
+    if (appId === config.mpAppId) {
+      secret = (config.secret && config.secret.mpSecret) || config.mpSecret;
+    } else if (appId === config.mobileAppId) {
+      secret = (config.secret && config.secret.mobileSecret) || config.mobileSecret;
+    } else if (config.secret.mobileApps) {
+      config.secret.mobileApps.forEach((appConfig) => {
+        if (appId === appConfig.appId && appConfig.secret) {
+          appId = appConfig.appId;
+          secret = appConfig.secret;
+        }
+      });
+    }
+    const params = {
       code: query.code,
-      appid: state.appId,
-      secret: OAuth.openSecret(state.appId === config.mpAppId ? (config.secret && config.secret.mpSecret || config.mpSecret) : (state.appId === config.mobileAppId ? (config.secret && config.secret.mobileSecret || config.mobileSecret) : (config.secret && config.secret.secret || config.secret))),
-      grant_type: 'authorization_code'
+      appid: appId,
+      secret: OAuth.openSecret(secret),
+      grant_type: 'authorization_code',
     };
-    //console.log('request wechat access token:', params);
-    //Request an access token
+    // console.log('request wechat access token:', params);
+    // Request an access token
     response = HTTP.get(
-      "https://api.weixin.qq.com/sns/oauth2/access_token", {
-        params
-      }
+      'https://api.weixin.qq.com/sns/oauth2/access_token', {
+        params,
+      },
     );
 
     if (response.statusCode !== 200 || !response.content)
